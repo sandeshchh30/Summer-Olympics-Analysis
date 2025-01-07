@@ -47,23 +47,43 @@ def get_athlete_performance(df, sport):
     df1 = df1.head(50)
     return df1.reset_index().drop('index', axis=1)
 
+def get_country_medal_tally(df, country):
+    df = df.drop_duplicates(subset=['Team', 'NOC', 'Games', 'Year', 'Season', 'City', 'Sport', 'Event', 'Medal'])
+    temp_df = df[df['region'] == country]
+    medal_tally= temp_df.groupby('Year').sum()[['Gold', 'Silver', 'Bronze', 'Total']].sort_values('Year', ascending=False).reset_index()
+    return medal_tally
+
 def get_country_excels(df, country):
     df = df[df['region'] == country]
-    df = df.dropna(subset=['Medal'])
     temp_df = df.drop_duplicates(subset=['Team', 'NOC', 'Games', 'Year', 'Season', 'City', 'Sport', 'Event', 'Medal'])
     pivot_table = temp_df.pivot_table(index='Sport', columns='Year', values='Medal', aggfunc='count').fillna(0).astype(int)
     return pivot_table
+
+def get_detailed_country(df, country, year):
+    country_df = df[df['region'] == country]
+    country_df.dropna(subset=['Medal'], inplace=True)
+    country_df = country_df[country_df['Year'] == year]
+    team_df = country_df.drop_duplicates(subset=['Year', 'Team', 'Sport', 'Event', 'Medal'])
+    team_medals = country_df.groupby([ 'Team', 'Sport', 'Event', 'Medal'], as_index=False).agg({'Name': lambda x: ', '.join(x)})
+    team_medals.rename(columns={'Name':'Players'}, inplace=True)
+    return team_medals
 
 def get_top_athletes_country_wise(df, country):
     temp_df = df[df['region'] == country]
     temp_df = temp_df.dropna(subset=['Medal'])
     temp_df = (
         temp_df.groupby(['Name', 'Sport'], as_index=False)
-          .agg({'Total': 'sum'})
+          .agg({'Total': 'sum', 'Gold': 'sum', 'Silver':'sum', 'Bronze':'sum'})
           .sort_values('Total', ascending=False)
     )
 
-    return temp_df.reset_index().drop('index', axis=1).head(10)
+    return temp_df.reset_index().drop('index', axis=1)
+
+def get_athlete_details(df, country, athlete):
+    # temp_df.drop_duplicates(subset=['Name','Team', 'Sport', 'Event','Year','region', 'Medal'], inplace=True)
+    temp_df = df[(df['region'] == country) & (df['Name'] == athlete)]
+    return temp_df[['Team', 'Sport', 'Event', 'Year', 'Medal']]
+
 
 def get_age_kde(df):
     athlete_df = df.drop_duplicates(subset=['Name', 'region'])

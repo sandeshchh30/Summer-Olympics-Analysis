@@ -95,29 +95,61 @@ if user_menu == 'Overall Analysis':
 
 
 if user_menu == 'Country wise Analysis':
-    country_df = df.dropna(subset=['Medal'])
+    # country_df = df.dropna(subset=['Medal'])
+    country_df = df
 
     country = helper.get_list(country_df, 'region', False)
     selected_country = st.sidebar.selectbox("Select Country", country)
 
+
+    ## Feature 1
     st.title(selected_country + " Medal Tally over the years")
-    country_medal_tally = helper.fetch_medal_tally(selected_country, 'Overall', country_df)
-    fig = px.line(country_medal_tally, x='Year', y='Total')
+    country_medal_tally = helper.get_country_medal_tally(country_df, selected_country)
+    y = ['Gold', 'Silver', 'Bronze', 'Total']
+    selected_y = st.selectbox("Select Y label", y)
+    fig = px.line(country_medal_tally, x='Year', y=selected_y)
     fig.update_layout(
         xaxis_title="Year",
-        yaxis_title="Total Medals",
+        yaxis_title=selected_y + "  Medals",
     )
     st.plotly_chart(fig)
 
+
+    ## Feature 2
     st.title(selected_country + " Excels in the following sport")
     table = helper.get_country_excels(country_df, selected_country)
-    fig, ax = plt.subplots(figsize=(20, 20))
+    fig, ax = plt.subplots(figsize=(20, 15))
     sns.heatmap(table, annot=True,ax=ax)
     st.pyplot(fig)
 
+
+    ## Feature 3
+    st.title("Detailed Analysis")
+    years = helper.get_list(df, 'Year', False)
+    col1, col2 = st.columns([3.3, 0.7])
+    with col1:
+        selected_year = st.selectbox('Select Year', years)
+    country_df = helper.get_detailed_country(df, selected_country, selected_year)
+    with col2:
+        full_table = st.button("Show Full Table", use_container_width=True)
+    if full_table == False:
+        st.table(country_df.head(15))
+    if full_table:
+        st.table(country_df)
+    country_df = helper.get_detailed_country(df, selected_country, selected_year)
+
+
+    ## Feature 4
     st.title(selected_country + " top 10 Athletes")
     top_athletes = helper.get_top_athletes_country_wise(df, selected_country)
-    st.table(top_athletes)
+    st.table(top_athletes.head(10))
+
+
+    ## Feature 5
+    st.title(selected_country + " top 10 Athletes Detailed Analysis")
+    selected_athlete = st.selectbox("Select Athlete", top_athletes['Name'])
+    temp_df = helper.get_athlete_details(df, selected_country, selected_athlete)
+    st.table(temp_df)
 
 if user_menu == 'Athlete wise Analysis':
     st.title("Distribution of Age")
